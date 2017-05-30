@@ -37,26 +37,25 @@ public class client extends JFrame implements ActionListener
 	  public static final String fieldSep = "#";
 	  public static final String endInst = ";";
 	  public static final String endMkr = ">";
-	  public JButton getBtn, catBtn, logBtn, regBtn, newBtn, uptBtn, delBtn, abortBtn, connectBtn;
+	  JButton send;
+	public JButton connectBtn;
 	  public JTextArea display, textEntry;
 	  public JTextField hostEntry, portEntry;
 	  public JLabel labelHost, labelPort;
 	  
 
 	  public client() {
-	    super("Scoreboard Client");
+	    super("Messenger Application");
 	    clientRunning = true;
-	    getBtn = new JButton("Get information for a specific tour");       getBtn.addActionListener(this); 
-	    catBtn = new JButton("See our full catalogue of tours");      catBtn.addActionListener(this); 
-	    logBtn = new JButton("Sign in to our server");     logBtn.addActionListener(this); 
-	
-	    abortBtn = new JButton("Terminate session");      abortBtn.addActionListener(this); 
+	 
+	   
 	    connectBtn = new JButton("Connect"); connectBtn.addActionListener(this); 
 	    display = new JTextArea(10,43);
 	    hostEntry = new JTextField();
 	    portEntry = new JTextField();
 	    labelHost = new JLabel("IP address");
 	    labelPort = new JLabel("Port");
+	    send = new JButton("Send"); send.addActionListener(this); 
 	    textEntry = new JTextArea(5, 43);
 	    JPanel p1 = new JPanel();
 	    JPanel p2 =  new JPanel();
@@ -65,6 +64,7 @@ public class client extends JFrame implements ActionListener
 	   
 	 
 	    p1.setLayout(new GridLayout(4,2));
+	    p3.setLayout(new BorderLayout());
 	  
 	    add(p1, BorderLayout.CENTER); //default JFrame layout
 	    add(new JScrollPane(display), BorderLayout.CENTER);
@@ -76,6 +76,7 @@ public class client extends JFrame implements ActionListener
 	    p2.add(portEntry);
 	    p2.add(connectBtn);
 	    p3.add(textEntry);
+	     p3.add(send, BorderLayout.EAST);
 	    display.setEditable(false);
 	    add(p2,BorderLayout.NORTH);
 	    add(p3, BorderLayout.SOUTH);
@@ -114,48 +115,68 @@ public class client extends JFrame implements ActionListener
 	  }
 	  
 	  public void runClient()    {
-		    Socket client;
-		    System.out.println("works");
-		    try {
-		      // Step 1: Create a Socket to make connection.
-		      byte[] b = decDD(host);
-		      if (b != null) {
-		        client = new Socket(InetAddress.getByAddress(b), port);
-		      } else {
-		        client = new Socket(InetAddress.getByName(host), port);
-		      }
-		      System.out.println("Connected to: "
-		            + client.getInetAddress().getHostName());
+	        Socket client;
+	        try {
+	            // Step 1: Create a Socket to make connection.
+	            display.setText(String.format("Attempting connection to %s\n", host));
+	            client = new Socket(InetAddress.getByName(host), port);
 
-		      // Step 2: Get the input and output streams.
-		      output = new DataOutputStream(client.getOutputStream());
-		      output.flush();
-		      input = new DataInputStream(client.getInputStream());
-		      System.out.println("Got I/O streams");
+	            display.append("Connected to: "
+	                + client.getInetAddress().getHostName());
 
-		      // Step 3: Process connection.
-		      byte[] buff = new byte[BUFFSZ];
-		      int len;
-		      do {
-		        len = input.read(buff);
-		        if (len > 0)
-		          System.out.println(new String(buff, 0, len));
-		      } while (clientRunning);
+	            // Step 2: Get the input and output streams.
+	            output = new DataOutputStream(client.getOutputStream());
+	            output.flush();
+	            input = new DataInputStream(client.getInputStream());
+	            display.append( "\nGot I/O streams\n" );
 
-		      // Step 4: Close connection.
-		      System.out.println("\nClosing connection.");
-		      output.close();
-		      input.close();
-		      client.close();
-		      System.out.println("Closing connection.");
-		    }
-		    catch (EOFException eof) {
-		      System.out.println("Server terminated connection");
-		    }
-		    catch (Exception e) { //IOException or ConnectException
-		      System.err.println(e);
-		    }
-		  }
+	            // Step 3: Process connection.
+	            byte[] buff = new byte[BUFFSZ];
+	            int len;
+	            String recStg;
+
+	            recStg = new String();
+	            do {
+	                len = input.read(buff);
+
+	                recStg +=  new String(buff, 0, len);
+	                System.out.println(recStg);
+	                try{
+	                    Thread.sleep(150);
+	                }
+	                catch(InterruptedException ex) {
+	                    Thread.currentThread().interrupt();
+	                }
+	                if (len > 1 && recStg.contains(">"))
+	                {
+		                recStg = recStg.replaceAll(">","");
+
+	                    display.append(recStg);
+	                    recStg = new String();
+
+	                }
+
+	            }while(clientRunning);
+
+	            // Step 4: Close connection.
+	            if(clientRunning == false)
+	            {
+	                display.append("\nClosing connection.");
+	                output.close();
+	                input.close();
+	                client.close();
+	                dispose();
+	            }
+
+	        }
+	        catch (EOFException eof) {
+	            display.append("\nServer terminated connection");
+	        }
+	        catch (Exception e) { //may be an IOException or a ConnectException
+	            //System.err.println(e);
+	            e.printStackTrace();
+	        }
+	    }
 
  //Process commands from button clicks ...
 		  
@@ -164,6 +185,9 @@ public class client extends JFrame implements ActionListener
 		  
 		    String cmdStr = null, inputStr = null, inputStr2 = null, inputStr3 = null;
 		    Object src = evt.getSource();
+		    
+		   
+		    	
 		    
 		    if(src == connectBtn)
 			  {
@@ -180,53 +204,34 @@ public class client extends JFrame implements ActionListener
 			    t.start();
 
 			  }
+		    try{
+		    if(src == send)
+		    {
+		    	if(output == null)
+		    	{
+		    	display.setText("Not Connected");
+                textEntry.setText("");
+
+		    	}
+		    	
+		    	else
+		    	{
+                cmdStr = textEntry.getText() + endMkr;
+                textEntry.setText("");
+                output.writeBytes(cmdStr);
+                output.flush();
+		    	}
+		    }
 		    
-		    if (src == getBtn) {
-			inputStr = JOptionPane.showInputDialog("Tour:");
-            cmdStr = "GET"+endInst+fieldSep+inputStr;
-		    }
-		    else if (src ==  catBtn) {
-		      cmdStr = "CAT"+endInst;
-		    } 
-		    else if (src ==  logBtn) {
-		      inputStr = JOptionPane.showInputDialog("USERNAME:");
-		      if (inputStr == null) return;
-		      cmdStr = "USER"+endInst+fieldSep+inputStr;
-		    }
-		    else if (src ==  regBtn) {
-		      inputStr = JOptionPane.showInputDialog("USERNAME:");
-		      if (inputStr == null) return;
-		      inputStr2 = JOptionPane.showInputDialog("PASSWORD:");
-		      if (inputStr2 == null) return;
-		      cmdStr = "REG"+ endInst+fieldSep+inputStr+fieldSep+inputStr2;
-		    }
-		    else if (src ==  newBtn) {
-		      inputStr = JOptionPane.showInputDialog("Tour Name:");
-		      if (inputStr == null) return;
-		      inputStr2 = JOptionPane.showInputDialog("Cost:");
-		      if (inputStr2 == null) return;
-		      inputStr3 = JOptionPane.showInputDialog("Min To Run:");
-              if (inputStr3 == null) return;
 
-              cmdStr = "NEW"+endInst+fieldSep+inputStr+fieldSep+inputStr2+fieldSep+inputStr3;
+		   
 		    }
-		  
-		    else if (src == abortBtn) {
-		      cmdStr = "ABORT"+endInst;
-		      clientRunning = false;
-		    }
-		
-
-		    if (cmdStr == null) return;
-		    try {
-		      output.writeBytes(cmdStr);  //send
-		        System.out.printf("%d bytes sent\n", cmdStr.length());
-		    } 
-		    catch (IOException ex) {
-		      System.err.println("Error writing object");
-		    }
-		    display.setCaretPosition(display.getText().length());
-		  } // actionPerformed()
+		    catch (IOException cnfex) {
+	            display.append("\nError writing object");
+	        }
+	        display.setCaretPosition(display.getText().length());
+	    }
+		   // actionPerformed()
 
 		  public static void main(String args[])   {
 		    client app;

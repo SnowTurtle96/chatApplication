@@ -54,84 +54,7 @@ public class server {
         }
     }
 
-    class Tours {
-
-        int tourID;
-        String tourname;
-        int tourcost;
-        int minToRun;
-
-        public Tours(int ID, String name, int cost, int min)
-        {
-            tourID = ID;
-
-            tourname = name;
-            tourcost = cost;
-            minToRun = min;
-        }
-
-        public String toString()
-        {
-            return "Tour ID : " + tourID + " " + "Tour name: " + tourname+ " " + "Cost: " + tourcost + " " + "min: " +  minToRun;
-        }
-
-        public int getTourID()
-        {
-            return tourID;
-
-        }
-
-        public int getMinToRun()
-        {
-            return minToRun;
-        }
-
-        public int getCost()
-        {
-            return tourcost;
-        }
-    }
-    class Bookings
-    {
-        public int walkNo;
-        public int bookings;
-        public String date;
-        public Date timestamp;
-
-        public Bookings(int id, int currentAmount, String dateEntry)
-        {
-            walkNo = id;
-            bookings = currentAmount;
-            date = dateEntry;
-
-        }
-
-        public int getWalkNo()
-        {
-            return walkNo;
-        }
-
-        public int getCurrentAmount()
-        {
-            return bookings;
-        }
-
-        public String getDate()
-        {
-            return date;
-        }
-
-
-        public void addBooking()
-        {
-            bookings = bookings + 1;
-        }
-
-        public String toString()
-        {
-            return "Walk No: " + walkNo +  "Current registered: " + bookings + " " + "date: " + date;
-        }
-    }
+   
 
     //Array lists and special character declarations
     public static final int BUFFSZ = 80;
@@ -140,8 +63,7 @@ public class server {
     private static String usersfile = "user.txt";
     private static String toursfile = "tours.txt";
     private ArrayList<Users> users = new ArrayList<Users>();
-    private ArrayList<Tours> tours = new ArrayList<Tours>();
-    private ArrayList<Bookings> bookings = new ArrayList<Bookings>();
+  
 
     public static final String endMkr = ">";
     public File file;
@@ -156,8 +78,6 @@ public class server {
 
     public server() {
         loadUsers();
-        loadTours();
-        loadBookings();
         startup();
 
         try
@@ -201,60 +121,16 @@ public class server {
 
     
 
-    public void loadTours() throws InputMismatchException
-    {
-        try {
-            Scanner scan = new Scanner(new BufferedReader(new FileReader("tours.txt")));
-            scan.useDelimiter("[,\\n]");
-            while (scan.hasNext()){
+   
 
-                int tourID = scan.nextInt();
-                String tourName = scan.next();
-                int cost = scan.nextInt();
-                String minToRun = scan.next();
-                String sorted = minToRun.replaceAll("\\s+","");
-                int minToRunInt = Integer.parseInt(sorted);
-                tours.add(new Tours(tourID, tourName, cost, minToRunInt));
-
-            }
-            System.out.println("Tours Added");
-            scan.close();
-        } catch(IOException ex) {
-            System.err.println("Could not open Tours file for reading");
-        }
-    }
-
-
-    public void loadBookings()
-    {
-
-        try {
-            Scanner scan = new Scanner(new BufferedReader(new FileReader("bookings.txt")));
-
-            while (scan.hasNext())
-                bookings.add(new Bookings(scan.nextInt(), scan.nextInt(), scan.next()));
-            System.out.println("Bookings Added");
-            scan.close();
-
-        } catch(IOException ex) {
-            System.err.println("Could not open Bookings file for reading");
-        }
-    }
+  
 
     public int arraySize()
     {
         return users.size();
     }
 
-    public void getArray()
-    {
-        System.out.println(tours.get(1));
-    }
-
-    public int getBookingsArray()
-    {
-        return bookings.size();
-    }
+    
 
     public void displayUsers() {
 
@@ -263,12 +139,7 @@ public class server {
         }
     }
 
-    public void displayTours() {
-
-        for (Tours tours1: tours) {
-            System.out.println((tours1.toString()+"\n"));
-        }
-    }
+   
 
     public void runServer(int port) {
         Thread newThread = null;
@@ -360,6 +231,8 @@ public class server {
                 input = new DataInputStream(conn.getInputStream());
                 conn.setTcpNoDelay(true);
                 System.out.printf("Thread %s has I-O streams\n", getName());
+                sendMsg(output, "Connected");
+
 
                 boolean running = true;
                 while(running) { //Service thread duty cycle
@@ -385,85 +258,14 @@ public class server {
                             sendMsg(output, "You need to be logged in.");
                         }
                     }
-                    else if(recData[0].equals("CAT"))
-                    {
-                        sendAll(output);
-                    }
+                 
 
-                    else if(recData[0].equals("REG"))
-                    {
-                       
-                        register(output, recData[1], recData[2]);
+                
 
-                    }
-
-                    else if(recData[0].equals("LOG"))
-                    {
-                        if(loggedIn == true)
-                        {
-                            sendMsg(output, "Already signed in");
-                        }
-                        else
-                        {
-
-                            login(recData[1], recData[2]);
-                        }
-                    }
-
-                    else if(recData[0].equals("MIN"))
-                    {
-
-                        int tourID = Integer.parseInt(recData[1]);
-                        getMin(output, tourID);
-                    }
-
-                    else if(recData[0].equals("LISTBOOK"))
-                    {
-                        ListBook(output);
-                    }
-
-                    else if(recData[0].equals("COST"))
-                    {
-                        int tourID = Integer.parseInt(recData[1]);
-                        getCost(output, tourID);
-                    }
-
-                    else if(recData[0].equals ("DATE"))
-                    {
-                        int tourID = Integer.parseInt(recData[1]);
-                        getDate(output, tourID);
-                    }
-
-                    else if(recData[0].equals("BOOK"))
-                    {
-                        if(loggedIn == true)
-                        {
-                            int tourID = Integer.parseInt(recData[1]);
-                            String date = recData[2];
-                            bookTour(output, tourID, date);
-                            updateSignupFile(output, getUser(), tourID, date);
-
-                        }
-                        else
-                        {
-                            sendMsg(output, "Must be logged in or tour does not exist");
-                        }
-                        
-
-                    }
-                    else if (recData[0].equals("CLOSE")) {
-
-                        if (loggedIn) {
-                            running = false;
-                            loggedIn = false;
-                            sendMsg(output, "Server going Down.");
-
-                        } else {
-                            running = false;
-                        }
-                    }
+                    
+                  
                 } //end while(running)
-                input.close(); output.close(); conn.close(); updateBookingFile(); pw.close(); pw1.close();
+                input.close(); output.close(); conn.close(); pw.close(); pw1.close();
                 System.out.printf("Connection %s done\n", getName());
                 if (serviceThrds.remove(this))
                     System.out.println("Service thread deleted");
@@ -506,15 +308,7 @@ public class server {
         // class ServiceThread
     }
 
-    private synchronized void sendAll(DataOutputStream output) throws IOException {
-        output.writeBytes("\n");
-        for (Tours tour: tours) {
-            output.writeBytes((tour.toString()+"\n"));
-        }
-        output.writeBytes(">" +"\n");
-        output.flush();
-    } //sendAll()
-
+    
     /***************** Client service helper functions ********************/
 
     //General-purpose messaging function
@@ -551,95 +345,18 @@ public class server {
         output.writeBytes(">" +"\n");
         output.flush();
 
-    }
+    
 
-    public synchronized void getMin(DataOutputStream output, int tourID) throws IOException
-    {
-        int minOutput = 0;
-        output.writeBytes("\n");
-        for (Tours tour : tours) {
-            if (tour.getTourID() == (tourID)) {
-                minOutput = tour.getMinToRun();
-                output.writeBytes("Tour " + tourID + " Requires a minimum of " + minOutput + " to run" + "\n");
-            }
-        } 
-
+   
         output.writeBytes(">" +"\n");
         output.flush();
     }
 
-    public synchronized void getCost(DataOutputStream output, int tourID) throws IOException
-    {
-        int costOutput = 0;
-        output.writeBytes("\n");
-        for (Tours tour : tours) {
-            if (tour.getTourID() == (tourID)) {
-                costOutput = tour.getCost();
-                output.writeBytes("Tour " + tourID + " costs " + costOutput); 
-            }
-        }
-        output.writeBytes(">" +"\n");
-        output.flush();
-
-    }
-
-    public synchronized void getDate(DataOutputStream output, int tourID) throws IOException
-    {
-        String dateOutput = null;
-        output.writeBytes("\n");
-        for (Bookings booking : bookings) {
-            if (booking.getWalkNo() == (tourID)) {
-                System.out.println("Ladddd");
-                dateOutput = booking.getDate();
-                output.writeBytes("Tour " + tourID + " runs on " + dateOutput);
-                output.writeBytes("\n");
-
-            }
-        } 
-        output.writeBytes(">" +"\n");
-        output.flush();
-
-    }
-
-    private synchronized void ListBook(DataOutputStream output) throws IOException {
-        output.writeBytes("\n");
-        for (Bookings booking: bookings) {
-            output.writeBytes((booking.toString()+"\n"));
-        }
-        output.writeBytes(">" +"\n");
-        output.flush();
-    } //sendAll()
+   
+   
+ 
 
 
-    public synchronized void bookTour(DataOutputStream output, int tourID, String date) throws IOException
-    {
-        output.writeBytes("\n");
-        boolean exists = false;
-
-        for(Bookings booking : bookings) {
-            if (booking.getWalkNo() == (tourID)) {
-                System.out.print("TOUR FOUND  " + date + " " + booking.getDate() );
-
-                if(booking.getDate().equals (date)){
-
-                    booking.addBooking();
-                    exists = true;
-                }
-
-            }
-        }
-
-        if(exists)
-        {
-
-            output.writeBytes("Tour " + tourID + " booked on " + date); 
-            updateBookingFile();
-
-        }
-
-        output.writeBytes(">" +"\n");
-        output.flush();
-    }
 
     public void eraseFile()throws IOException
     {
@@ -648,23 +365,7 @@ public class server {
 
     }
 
-    public void updateBookingFile() throws IOException
-    {
-
-        eraseFile();
-        for(Bookings booking : bookings)
-        {
-
-            int tourID = booking.getWalkNo();
-            int amount = booking.getCurrentAmount();
-            String date = booking.getDate();
-
-            pw1.append("\n" + tourID + " " + amount + " " + date);
-            pw1.newLine();
-
-        }
-        pw1.flush();
-    }
+    
 
     public void updateSignupFile(DataOutputStream output, String user, int tourID, String date) throws IOException
     {
